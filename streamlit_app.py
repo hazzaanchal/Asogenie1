@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 from keyword_utils import (
     generate_ai_keywords,
     validate_keywords,
@@ -32,10 +33,11 @@ st.markdown("---")
 st.markdown("**Step 2: Already have keyword ideas? Expand them with ASOGenie**")
 user_keywords = st.text_area("Paste your keywords (comma separated)", placeholder="e.g. credit card tracker, loan calculator")
 
+# ✅ INIT this outside button block to avoid NameError
+final_keywords = []
+
 if st.button("Generate Keyword Suggestions"):
     st.info("Genie is working its magic...")
-
-    final_keywords = []
 
     # From app theme + competitors
     if app_theme:
@@ -49,12 +51,12 @@ if st.button("Generate Keyword Suggestions"):
         expanded = expand_user_keywords(base)
         validated_expanded = validate_keywords(expanded)
         final_keywords.extend(validated_expanded)
-        
+
+# ✅ Output section outside the button block
 if final_keywords:
     try:
         final_df = pd.DataFrame(final_keywords)
 
-        # Only keep rows that actually have all required columns
         required_cols = ["Keyword", "Volume (Est)", "Difficulty", "Efficiency", "In Autocomplete?", "Language"]
         if not all(col in final_df.columns for col in required_cols):
             st.warning("Some data fields are missing in the output. Please check logic or keyword_utils.py.")
@@ -65,5 +67,3 @@ if final_keywords:
         st.error(f"Something went wrong while displaying the keywords: {e}")
 else:
     st.warning("No keywords generated. Try adjusting your inputs.")
-
-
