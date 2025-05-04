@@ -49,7 +49,8 @@ if st.button("Generate Keyword Suggestions"):
         expanded = expand_user_keywords(base)
         validated_expanded = validate_keywords(expanded)
         final_keywords.extend(validated_expanded)
-    if final_keywords:
+        
+if final_keywords:
     try:
         final_df = pd.DataFrame(final_keywords)
 
@@ -64,4 +65,5 @@ if st.button("Generate Keyword Suggestions"):
         st.error(f"Something went wrong while displaying the keywords: {e}")
 else:
     st.warning("No keywords generated. Try adjusting your inputs.")
+
 
