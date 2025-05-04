@@ -49,9 +49,19 @@ if st.button("Generate Keyword Suggestions"):
         expanded = expand_user_keywords(base)
         validated_expanded = validate_keywords(expanded)
         final_keywords.extend(validated_expanded)
-
     if final_keywords:
-        df = st.dataframe(final_keywords)
-        st.download_button("📥 Download CSV", final_keywords.to_csv(index=False), "asogenie_keywords.csv")
-    else:
-        st.warning("No keywords generated. Try adjusting your inputs.")
+    try:
+        final_df = pd.DataFrame(final_keywords)
+
+        # Only keep rows that actually have all required columns
+        required_cols = ["Keyword", "Volume (Est)", "Difficulty", "Efficiency", "In Autocomplete?", "Language"]
+        if not all(col in final_df.columns for col in required_cols):
+            st.warning("Some data fields are missing in the output. Please check logic or keyword_utils.py.")
+        else:
+            st.dataframe(final_df)
+            st.download_button("📥 Download CSV", final_df.to_csv(index=False), "asogenie_keywords.csv")
+    except Exception as e:
+        st.error(f"Something went wrong while displaying the keywords: {e}")
+else:
+    st.warning("No keywords generated. Try adjusting your inputs.")
+
