@@ -18,7 +18,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.image("https://raw.githubusercontent.com/hazzaanchal/Asogenie1/main/assets/asogenie-logo.png", width=200)
+st.image("5A4057F4-07C9-499A-9951-14D4A196B088.png", width=160)
 
 st.title("🔮 ASOGenie")
 st.caption("AI-powered ASO keyword magic. Built for Indian apps.")
