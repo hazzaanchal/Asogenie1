@@ -40,36 +40,21 @@ if query:
     app_titles = [f"{r['title']} ({r['appId']})" for r in results]
     app_selected = st.selectbox("Select the app", options=app_titles)
 
-if app_selected:
-    selected_package = re.search(r'\((.*?)\)', app_selected).group(1)
-    selected_app_info = fetch_app(selected_package, lang="en", country="in")
+    if app_selected:
+        selected_package = re.search(r'\((.*?)\)', app_selected).group(1)
+        selected_app_info = fetch_app(selected_package, lang="en", country="in")
+        
+        st.image(selected_app_info['icon'], width=64, caption=selected_app_info['title'])
+        st.success(f"Fetched data for: {selected_app_info['title']}")
+        st.markdown(f"**Category:** {selected_app_info['genre']}")
+        st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
 
-    st.image(selected_app_info['icon'], width=64, caption=selected_app_info['title'])
-    st.success(f"Fetched data for: {selected_app_info['title']}")
-    st.markdown(f"**Category:** {selected_app_info['genre']}")
-    st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
-
-    autofill_theme = selected_app_info['description'][:300]
-    autofill_keywords = selected_app_info['description'].lower().split()[:15]
-
-    st.image(selected_app_info['icon'], width=64, caption=selected_app_info['title'])
-    st.success(f"Fetched data for: {selected_app_info['title']}")
-    st.markdown(f"**Category:** {selected_app_info['genre']}")
-    st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
-
-    autofill_theme = selected_app_info['description'][:300]
-    autofill_keywords = selected_app_info['description'].lower().split()[:15]
-    st.success(f"Fetched data for: {selected_app_info['title']}")
-    st.markdown(f"**Category:** {selected_app_info['genre']}")
-    st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
+        autofill_theme = selected_app_info['description'][:300]
+        autofill_keywords = selected_app_info['description'].lower().split()[:15]
 
 # 🔧 MAIN APP FLOW
 st.markdown("**Step 1: Describe your app**")
-if selected_app_info:
-    default_theme = selected_app_info['description'][:250]  # use a trimmed version
-else:
-    default_theme = ""
-
+default_theme = autofill_theme if autofill_theme else ""
 app_theme = st.text_input("What does your app do?", value=default_theme, placeholder="e.g. Track and pay credit card bills for rewards")
 competitors = st.text_input("Any competitor apps? (comma separated)", placeholder="e.g. Cred, OneCard")
 include_hindi = st.checkbox("Include Hindi keywords")
@@ -89,14 +74,14 @@ if st.button("Generate Keyword Suggestions"):
     combined_keywords = []
 
     # 1. AI + competitor logic
-if full_theme:
+    if full_theme:
         ai_keywords = generate_ai_keywords(full_theme, competitors, include_hindi)
         validated_ai = validate_keywords(ai_keywords)
         final_keywords.extend(validated_ai)
         combined_keywords.extend(ai_keywords)
 
     # 2. User keyword logic
-if user_keywords:
+    if user_keywords:
         base = [kw.strip() for kw in user_keywords.split(",") if kw.strip()]
         expanded = expand_user_keywords(base)
         validated_expanded = validate_keywords(expanded)
@@ -104,7 +89,7 @@ if user_keywords:
         combined_keywords.extend(expanded)
 
     # 3. Inject extracted keywords from Play Store description
-if selected_app_info:
+    if selected_app_info:
         validated_extracted = validate_keywords(autofill_keywords)
         final_keywords.extend(validated_extracted)
 
