@@ -5,7 +5,8 @@ import streamlit as st
 from keyword_utils import (
     generate_ai_keywords,
     validate_keywords,
-    expand_user_keywords
+    expand_user_keywords,
+    extract_keywords_from_playstore_results
 )
 
 st.set_page_config(page_title="ASOGenie", layout="wide")
@@ -20,9 +21,9 @@ st.image("5A4057F4-07C9-499A-9951-14D4A196B088.png", width=160)
 st.title("🔮 ASOGenie")
 st.caption("AI-powered ASO keyword magic. Built for Indian apps.")
 
-# 🔍 STEP 0: App Selector
+# 🔍 STEP 0: App Search
 st.markdown("### 🔍 Search a Play Store App")
-query = st.text_input("Enter app name", placeholder="e.g. Cred, Amazon, Nykaa")
+query = st.text_input("Enter your app name", placeholder="e.g. Cred, Amazon, Nykaa")
 selected_app_info, selected_package = None, None
 autofill_theme, autofill_keywords = "", []
 
@@ -39,73 +40,66 @@ if query:
         st.markdown(f"**Category:** {selected_app_info['genre']}")
         st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
 
-        # Autofill app theme
         autofill_theme = selected_app_info['description']
         autofill_keywords = selected_app_info['description'].lower().split()[:15]
 
-# 🧠 App Theme Autofilled
+# 🧠 App Theme Display
 st.markdown("### 💡 App Theme (Auto-filled from Play Store)")
 st.info(autofill_theme[:500])
 
-# 🔍 Competitor App Selector
-st.markdown("### 🧑‍🤝‍🧑 Add Competitor Apps")
-comp_query = st.text_input("Search competitor app", key="competitor_search")
+# 🧑‍🤝‍🧑 Competitor App Search
+st.markdown("### 🔄 Add Competitor Apps")
+comp_query = st.text_input("Search competitor apps")
 comp_selected = []
 if comp_query:
     comp_results = search(comp_query, lang="en", country="in", count=10)
     comp_titles = [f"{r['title']} ({r['appId']})" for r in comp_results]
-    comp_selected = st.multiselect("Select competitor apps", options=comp_titles, key="competitor_multiselect")
+    comp_selected = st.multiselect("Select competitor apps", options=comp_titles, key="multi")
 
-# 📝 User Keyword Input
+# ✍️ User Keyword Input
 st.markdown("### ✍️ Already have keyword ideas?")
 user_keywords = st.text_area("Paste your keywords (comma separated)", placeholder="e.g. credit card tracker, loan calculator")
 
-# ⏳ Keyword generation
+# 🔮 Keyword Generation
 final_keywords = []
 
 if st.button("Generate Keyword Suggestions"):
-    st.info("Genie is working its magic...")
-    base_theme = autofill_theme
-    full_competitor_text = ""
+    st.info("Genie is working...")
 
-    # Fetch competitor descriptions
-    if comp_selected:
-        for entry in comp_selected:
-            pkg = re.search(r'\((.*?)\)', entry).group(1)
-            try:
-                app_info = fetch_app(pkg, lang="en", country="in")
-                full_competitor_text += " " + app_info['description']
-            except Exception as e:
-                st.warning(f"Could not fetch data for {pkg}")
+    # Collect app + competitor metadata
+    full_theme = autofill_theme
+    comp_text = ""
 
-    # 1. AI-generated keywords
-    ai_keywords = generate_ai_keywords(base_theme + " " + full_competitor_text, "", include_hindi=False)
+    for c in comp_selected:
+        pkg = re.search(r'\((.*?)\)', c).group(1)
+        try:
+            app_info = fetch_app(pkg, lang="en", country="in")
+            comp_text += app_info['description']
+        except Exception:
+            pass
+
+    # Generate AI keywords
+    ai_keywords = generate_ai_keywords(full_theme + " " + comp_text)
     validated_ai = validate_keywords(ai_keywords)
     final_keywords.extend(validated_ai)
 
-    # 2. User keywords
+    # Expand user keywords
     if user_keywords:
         base = [kw.strip() for kw in user_keywords.split(",") if kw.strip()]
         expanded = expand_user_keywords(base)
         validated_expanded = validate_keywords(expanded)
         final_keywords.extend(validated_expanded)
 
-    # 3. Metadata based fallback
-    validated_meta = validate_keywords(autofill_keywords)
-    final_keywords.extend(validated_meta)
+    # Extract keywords from live Play Store search
+    dynamic_kw = extract_keywords_from_playstore_results(query)
+    validated_dynamic = validate_keywords(dynamic_kw)
+    final_keywords.extend(validated_dynamic)
 
-# 📊 Output
+# 📈 Output
 if final_keywords:
-    try:
-        final_df = pd.DataFrame(final_keywords)
-        required_cols = ["Keyword", "Volume (Est)", "Difficulty", "Efficiency", "In Autocomplete?", "Language"]
-        if not all(col in final_df.columns for col in required_cols):
-            st.warning("Some fields missing in output. Please check keyword_utils.py.")
-        else:
-            st.markdown("### 📈 Keyword Suggestions")
-            st.dataframe(final_df)
-            st.download_button("📥 Download CSV", final_df.to_csv(index=False), "asogenie_keywords.csv")
-    except Exception as e:
-        st.error(f"Something went wrong while displaying the keywords: {e}")
+    df = pd.DataFrame(final_keywords)
+    st.markdown("### 📊 Keyword Suggestions")
+    st.dataframe(df)
+    st.download_button("📥 Download CSV", df.to_csv(index=False), "asogenie_keywords.csv")
 else:
-    st.warning("No keywords generated. Try adjusting your inputs.")
+    st.warning("No keywords generated yet.")
