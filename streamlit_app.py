@@ -1,5 +1,3 @@
-from google_play_scraper import __version__ as gps_version
-st.write(gps_version)
 from google_play_scraper import search, app as fetch_app
 import pandas as pd
 import re
