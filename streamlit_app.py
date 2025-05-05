@@ -36,7 +36,7 @@ autofill_theme = ""
 autofill_keywords = []
 
 if query:
-    results = search(query, lang="en", country="in", n=5)
+    results = search(query, lang="en", country="in", num=5)
     app_titles = [f"{r['title']} ({r['appId']})" for r in results]
     app_selected = st.selectbox("Select the app", options=app_titles)
 
