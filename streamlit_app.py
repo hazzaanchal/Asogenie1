@@ -28,7 +28,7 @@ selected_app_info, selected_package = None, None
 autofill_theme, autofill_keywords = "", []
 
 if query:
-    results = search(query, lang="en", country="in", n=10)
+    results = search(query, lang="en", country="in")[:10]
     app_titles = [f"{r['title']} ({r['appId']})" for r in results]
     app_selected = st.selectbox("Select your app", options=app_titles)
 
@@ -52,7 +52,7 @@ st.markdown("### 🔄 Add Competitor Apps")
 comp_query = st.text_input("Search competitor apps")
 comp_selected = []
 if comp_query:
-    comp_results = search(comp_query, lang="en", country="in", count=10)
+    comp_results = search(comp_query, lang="en", country="in")[:10]
     comp_titles = [f"{r['title']} ({r['appId']})" for r in comp_results]
     comp_selected = st.multiselect("Select competitor apps", options=comp_titles, key="multi")
 
