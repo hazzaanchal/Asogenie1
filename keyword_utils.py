@@ -10,7 +10,7 @@ def extract_keywords_from_playstore_results(query, country='in', lang='en', num_
     """
     Extracts keyword-like phrases from top app titles and descriptions from Play Store.
     """
-    results = search(query, lang=lang, country=country, count=num_apps)
+    results = search(query, lang=lang, country=country)[:num_apps]
     phrases = set()
 
     for app in results:
@@ -33,7 +33,7 @@ def extract_keywords_from_playstore_results(query, country='in', lang='en', num_
     return list(phrases)[:20]  # return top 20 phrases
 
 # ------------------------------
-# 2. Generate AI Keywords
+# 2. Generate AI Keywords (from app + competitor text)
 # ------------------------------
 
 def generate_ai_keywords(text_blob, competitors="", include_hindi=False):
@@ -73,7 +73,7 @@ def expand_user_keywords(base_keywords):
     return list(set(expanded))
 
 # ------------------------------
-# 4. Validate Keywords (clean + score)
+# 4. Validate Keywords (clean + assign metrics)
 # ------------------------------
 
 def validate_keywords(keywords, include_hindi=False):
