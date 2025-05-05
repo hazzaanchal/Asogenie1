@@ -59,9 +59,9 @@ if app_selected:
 
     autofill_theme = selected_app_info['description'][:300]
     autofill_keywords = selected_app_info['description'].lower().split()[:15]
-        st.success(f"Fetched data for: {selected_app_info['title']}")
-        st.markdown(f"**Category:** {selected_app_info['genre']}")
-        st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
+    st.success(f"Fetched data for: {selected_app_info['title']}")
+    st.markdown(f"**Category:** {selected_app_info['genre']}")
+    st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
 
 # 🔧 MAIN APP FLOW
 st.markdown("**Step 1: Describe your app**")
@@ -89,14 +89,14 @@ if st.button("Generate Keyword Suggestions"):
     combined_keywords = []
 
     # 1. AI + competitor logic
-    if full_theme:
+if full_theme:
         ai_keywords = generate_ai_keywords(full_theme, competitors, include_hindi)
         validated_ai = validate_keywords(ai_keywords)
         final_keywords.extend(validated_ai)
         combined_keywords.extend(ai_keywords)
 
     # 2. User keyword logic
-    if user_keywords:
+if user_keywords:
         base = [kw.strip() for kw in user_keywords.split(",") if kw.strip()]
         expanded = expand_user_keywords(base)
         validated_expanded = validate_keywords(expanded)
@@ -104,7 +104,7 @@ if st.button("Generate Keyword Suggestions"):
         combined_keywords.extend(expanded)
 
     # 3. Inject extracted keywords from Play Store description
-    if selected_app_info:
+if selected_app_info:
         validated_extracted = validate_keywords(autofill_keywords)
         final_keywords.extend(validated_extracted)
 
