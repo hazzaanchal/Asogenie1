@@ -1,3 +1,5 @@
+import google_play_scraper
+st.write(google_play_scraper.__version__)
 from google_play_scraper import search, app as fetch_app
 import pandas as pd
 import re
