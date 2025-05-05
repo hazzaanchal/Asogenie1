@@ -25,11 +25,13 @@ def generate_ai_keywords(app_theme, competitors, include_hindi=False):
 
 def validate_keywords(keywords):
     results = []
+
     for kw in keywords:
-        volume = random.randint(500, 12000)
-        difficulty = random.randint(20, 80)
+        autofill_hits = get_autofill_suggestions_from_playstore(kw)
+        volume = 10000 if autofill_hits else 1500
+        difficulty = random.randint(25, 80)
         efficiency = round(volume / difficulty, 2)
-        autocomplete = random.choice(["Yes", "No"])
+        autocomplete = "Yes" if autofill_hits else "No"
         language = "Hindi" if any(ord(c) > 2000 for c in kw) else "English"
 
         results.append({
