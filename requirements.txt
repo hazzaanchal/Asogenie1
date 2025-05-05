@@ -1,7 +1,7 @@
 streamlit
 pandas
 beautifulsoup4
-google-play-scraper==1.2.3
 scikit-learn
 nltk
 requests
+google-play-scraper==1.2.1
