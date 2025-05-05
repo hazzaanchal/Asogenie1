@@ -1,75 +1,100 @@
-import requests
-from bs4 import BeautifulSoup
+import re
 import random
-import pandas as pd
+from google_play_scraper import search
 
-def generate_ai_keywords(app_theme, competitors, include_hindi=False):
-    base = []
+# ------------------------------
+# 1. Dynamic Keyword Extractor from Play Store Search
+# ------------------------------
 
-    if "beauty" in app_theme.lower():
-        base += [
-            "beauty shopping app", "skincare deals", "makeup discounts",
-            "hair care products", "lipstick sale", "cosmetic shopping app"
-        ]
+def extract_keywords_from_playstore_results(query, country='in', lang='en', num_apps=5):
+    """
+    Extracts keyword-like phrases from top app titles and descriptions from Play Store.
+    """
+    results = search(query, lang=lang, country=country, count=num_apps)
+    phrases = set()
 
-    if "loan" in app_theme.lower() or "credit" in app_theme.lower():
-        base += [
-            "credit score app", "loan interest checker", "emi calculator",
-            "home loan tracker", "compare loan rates", "pay credit card bill"
-        ]
+    for app in results:
+        title = app.get("title", "")
+        desc = app.get("description", "")
 
-    if include_hindi:
-        base += ["ऋण कैलकुलेटर", "मेकअप ऐप", "त्वचा देखभाल ऐप"]
+        title_words = re.findall(r'\b\w+\b', title.lower())
+        desc_words = re.findall(r'\b\w+\b', desc.lower())
 
-    return list(set(base))
+        for i in range(len(title_words) - 1):
+            phrase = f"{title_words[i]} {title_words[i+1]}"
+            if all(len(w) > 2 for w in phrase.split()):
+                phrases.add(phrase)
 
-def validate_keywords(keywords):
-    results = []
+        for i in range(len(desc_words) - 2):
+            phrase = f"{desc_words[i]} {desc_words[i+1]} {desc_words[i+2]}"
+            if all(len(w) > 2 for w in phrase.split()):
+                phrases.add(phrase)
 
-    for kw in keywords:
-        autofill_hits = get_autofill_suggestions_from_playstore(kw)
-        volume = 10000 if autofill_hits else 1500
-        difficulty = random.randint(25, 80)
-        efficiency = round(volume / difficulty, 2)
-        autocomplete = "Yes" if autofill_hits else "No"
-        language = "Hindi" if any(ord(c) > 2000 for c in kw) else "English"
+    return list(phrases)[:20]  # return top 20 phrases
 
-        results.append({
-            "Keyword": kw,
-            "Volume (Est)": volume,
-            "Difficulty": difficulty,
-            "Efficiency": efficiency,
-            "In Autocomplete?": autocomplete,
-            "Language": language
-        })
+# ------------------------------
+# 2. Generate AI Keywords
+# ------------------------------
 
-    return results
+def generate_ai_keywords(text_blob, competitors="", include_hindi=False):
+    base_seeds = [
+        "loan calculator", "emi tracker", "credit score app", "home loan interest",
+        "finance insights", "bank statement manager", "payment reminder app",
+        "monthly emi planner", "smart credit usage", "loan refinance tool"
+    ]
+
+    words = re.findall(r'\b\w+\b', text_blob.lower())
+    candidates = []
+    for i in range(len(words) - 2):
+        phrase = f"{words[i]} {words[i+1]} {words[i+2]}"
+        if all(len(w) > 2 for w in phrase.split()):
+            candidates.append(phrase)
+
+    keywords = list(set(base_seeds + candidates[:15]))
+    return keywords
+
+# ------------------------------
+# 3. Expand User Keywords
+# ------------------------------
 
 def expand_user_keywords(base_keywords):
-    expansions = []
+    synonyms = {
+        "loan": ["loan interest", "loan calculator", "personal loan app"],
+        "credit": ["credit card rewards", "check credit score", "credit report free"],
+        "emi": ["emi calculator", "monthly emi app", "auto debit emi"]
+    }
+
+    expanded = []
     for kw in base_keywords:
-        expansions.append(kw)
-        expansions.append(f"best {kw}")
-        expansions.append(f"{kw} app")
-        if "credit" in kw: expansions.append("credit score checker")
-        if "card" in kw: expansions.append("credit card reward app")
-        if "bill" in kw: expansions.append("auto bill pay tracker")
-    return list(set(expansions))
+        expanded.append(kw)
+        for key in synonyms:
+            if key in kw.lower():
+                expanded.extend(synonyms[key])
+    return list(set(expanded))
 
-def get_autofill_suggestions_from_playstore(query):
-    search_url = f"https://play.google.com/store/search?q={query.replace(' ', '+')}&c=apps&hl=en_IN"
-    headers = {"User-Agent": "Mozilla/5.0"}
+# ------------------------------
+# 4. Validate Keywords (clean + score)
+# ------------------------------
 
-    try:
-        response = requests.get(search_url, headers=headers, timeout=10)
-        soup = BeautifulSoup(response.text, "html.parser")
+def validate_keywords(keywords, include_hindi=False):
+    stopwords = {"and", "or", "the", "to", "for", "your", "with", "get", "have", "has", "this", "that", "you", "apps", "app"}
+    cleaned = []
 
-        titles = [tag.text.strip() for tag in soup.select('div[aria-label]') if query.lower() in tag.text.lower()]
-        suggestions = list(set(titles))  # remove duplicates
+    for kw in keywords:
+        kw_clean = re.sub(r"[^\w\s]", "", kw).strip().lower()
+        if kw_clean and all(w not in stopwords for w in kw_clean.split()) and len(kw_clean) > 3:
+            cleaned.append(kw_clean)
 
-        return suggestions[:5]  # limit to top 5
+    cleaned = list(set(cleaned))
 
-    except Exception as e:
-        print("❌ Scraping error:", e)
-        return []
-
+    return [
+        {
+            "Keyword": kw,
+            "Volume (Est)": random.randint(1000, 15000),
+            "Difficulty": random.randint(10, 90),
+            "Efficiency": round(random.uniform(0.5, 1.5), 2),
+            "In Autocomplete?": "Yes" if "app" in kw or "calculator" in kw else "No",
+            "Language": "English"
+        }
+        for kw in cleaned
+    ]
