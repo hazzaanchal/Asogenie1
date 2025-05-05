@@ -40,7 +40,7 @@ if query:
     app_titles = [f"{r['title']} ({r['appId']})" for r in results]
     app_selected = st.selectbox("Select the app", options=app_titles)
 
-   if app_selected:
+if app_selected:
     selected_package = re.search(r'\((.*?)\)', app_selected).group(1)
     selected_app_info = fetch_app(selected_package, lang="en", country="in")
 
@@ -62,9 +62,6 @@ if query:
         st.success(f"Fetched data for: {selected_app_info['title']}")
         st.markdown(f"**Category:** {selected_app_info['genre']}")
         st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
-
-        autofill_theme = selected_app_info['description'][:300]
-        autofill_keywords = selected_app_info['description'].lower().split()[:15]
 
 # 🔧 MAIN APP FLOW
 st.markdown("**Step 1: Describe your app**")
