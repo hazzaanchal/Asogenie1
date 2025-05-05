@@ -1,3 +1,5 @@
+import requests
+from bs4 import BeautifulSoup
 import random
 import pandas as pd
 
@@ -51,3 +53,21 @@ def expand_user_keywords(base_keywords):
         if "card" in kw: expansions.append("credit card reward app")
         if "bill" in kw: expansions.append("auto bill pay tracker")
     return list(set(expansions))
+
+def get_autofill_suggestions_from_playstore(query):
+    search_url = f"https://play.google.com/store/search?q={query.replace(' ', '+')}&c=apps&hl=en_IN"
+    headers = {"User-Agent": "Mozilla/5.0"}
+
+    try:
+        response = requests.get(search_url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        titles = [tag.text.strip() for tag in soup.select('div[aria-label]') if query.lower() in tag.text.lower()]
+        suggestions = list(set(titles))  # remove duplicates
+
+        return suggestions[:5]  # limit to top 5
+
+    except Exception as e:
+        print("❌ Scraping error:", e)
+        return []
+
