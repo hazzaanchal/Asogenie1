@@ -37,63 +37,78 @@ autofill_keywords = []
 
 if query:
     results = search(query)
-    app_titles = [f"{r['title']} ({r['appId']})" for r in results]
-    app_selected = st.selectbox("Select the app", options=app_titles)
+    if results:
+        app_titles = [f"{r['title']} ({r['appId']})" for r in results]
+        app_selected = st.selectbox("Select your app", options=app_titles)
 
-    if app_selected:
-        selected_package = re.search(r'\((.*?)\)', app_selected).group(1)
-        selected_app_info = fetch_app(selected_package, lang="en", country="in")
-        
-        st.image(selected_app_info['icon'], width=64, caption=selected_app_info['title'])
-        st.success(f"Fetched data for: {selected_app_info['title']}")
-        st.markdown(f"**Category:** {selected_app_info['genre']}")
-        st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
+        if app_selected:
+            selected_package = re.search(r'\((.*?)\)', app_selected).group(1)
+            selected_app_info = fetch_app(selected_package, lang="en", country="in")
 
-        autofill_theme = selected_app_info['description'][:300]
-        autofill_keywords = selected_app_info['description'].lower().split()[:15]
+            st.image(selected_app_info['icon'], width=64, caption=selected_app_info['title'])
+            st.success(f"Fetched data for: {selected_app_info['title']}")
+            st.markdown(f"**Category:** {selected_app_info['genre']}")
+            st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
 
-# 🔧 MAIN APP FLOW
-st.markdown("**Step 1: Describe your app**")
-default_theme = autofill_theme if autofill_theme else ""
-app_theme = st.text_input("What does your app do?", value=default_theme, placeholder="e.g. Track and pay credit card bills for rewards")
-competitors = st.text_input("Any competitor apps? (comma separated)", placeholder="e.g. Cred, OneCard")
+            autofill_theme = selected_app_info['description'][:300]
+            autofill_keywords = selected_app_info['description'].lower().split()[:15]
+
+            st.markdown("### 🧠 App Theme (Auto-filled from Play Store)")
+            st.info(autofill_theme)
+    else:
+        st.warning("No app found. Try modifying your search term.")
+
+# 🔍 STEP 1.5: COMPETITOR APP PICKER
+st.markdown("### 🔄 Add Competitor Apps")
+competitor_query = st.text_input("Search competitor app", placeholder="e.g. OneCard, PhonePe")
+competitor_options = []
+selected_competitors = []
+
+if competitor_query:
+    competitor_results = search(competitor_query)
+    competitor_options = [f"{r['title']} ({r['appId']})" for r in competitor_results]
+    selected_competitors = st.multiselect("Select competitor apps", options=competitor_options)
+
+# 🔧 HINDI SWITCH
 include_hindi = st.checkbox("Include Hindi keywords")
 
-st.markdown("---")
-st.markdown("**Step 2: Already have keyword ideas? Expand them with ASOGenie**")
-user_keywords = st.text_area("Paste your keywords (comma separated)", placeholder="e.g. credit card tracker, loan calculator")
+# 🔧 STEP 2: Expand User Keywords
+st.markdown("### ✍️ Already have keyword ideas?")
+suggested_keyword_base = ", ".join(autofill_keywords[:5]) if autofill_keywords else ""
+user_keywords = st.text_area(
+    "Paste your keywords (comma separated)",
+    placeholder="e.g. credit card tracker, loan calculator",
+    value=suggested_keyword_base
+)
 
-# ✅ INIT this outside button block to avoid NameError
+# ✅ INIT
 final_keywords = []
 
 if st.button("Generate Keyword Suggestions"):
     st.info("Genie is working its magic...")
 
-    # Combine app description as fallback theme if no manual input
-    full_theme = app_theme if app_theme else autofill_theme
-    combined_keywords = []
+    # 1. From app metadata
+    full_theme = autofill_theme
+    competitors_text = ", ".join([re.search(r'\((.*?)\)', c).group(1) for c in selected_competitors]) if selected_competitors else ""
 
-    # 1. AI + competitor logic
     if full_theme:
-        ai_keywords = generate_ai_keywords(full_theme, competitors, include_hindi)
+        ai_keywords = generate_ai_keywords(full_theme, competitors_text, include_hindi)
         validated_ai = validate_keywords(ai_keywords)
         final_keywords.extend(validated_ai)
-        combined_keywords.extend(ai_keywords)
 
-    # 2. User keyword logic
+    # 2. From user keywords
     if user_keywords:
         base = [kw.strip() for kw in user_keywords.split(",") if kw.strip()]
         expanded = expand_user_keywords(base)
         validated_expanded = validate_keywords(expanded)
         final_keywords.extend(validated_expanded)
-        combined_keywords.extend(expanded)
 
-    # 3. Inject extracted keywords from Play Store description
-    if selected_app_info:
+    # 3. From raw app description words
+    if autofill_keywords:
         validated_extracted = validate_keywords(autofill_keywords)
         final_keywords.extend(validated_extracted)
 
-# ✅ Output section
+# ✅ Output
 if final_keywords:
     try:
         final_df = pd.DataFrame(final_keywords)
