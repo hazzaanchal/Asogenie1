@@ -42,7 +42,17 @@ if query:
 
     if app_selected:
         selected_package = re.search(r'\((.*?)\)', app_selected).group(1)
-        selected_app_info = fetch_app(selected_package, lang="en", country="in")
+        if app_selected:
+    selected_package = re.search(r'\((.*?)\)', app_selected).group(1)
+    selected_app_info = fetch_app(selected_package, lang="en", country="in")
+
+    st.image(selected_app_info['icon'], width=64, caption=selected_app_info['title'])
+    st.success(f"Fetched data for: {selected_app_info['title']}")
+    st.markdown(f"**Category:** {selected_app_info['genre']}")
+    st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
+
+    autofill_theme = selected_app_info['description'][:300]
+    autofill_keywords = selected_app_info['description'].lower().split()[:15]
         st.success(f"Fetched data for: {selected_app_info['title']}")
         st.markdown(f"**Category:** {selected_app_info['genre']}")
         st.markdown(f"**Description Preview:** {selected_app_info['description'][:300]}...")
@@ -52,7 +62,12 @@ if query:
 
 # 🔧 MAIN APP FLOW
 st.markdown("**Step 1: Describe your app**")
-app_theme = st.text_input("What does your app do?", placeholder="e.g. Track and pay credit card bills for rewards")
+if selected_app_info:
+    default_theme = selected_app_info['description'][:250]  # use a trimmed version
+else:
+    default_theme = ""
+
+app_theme = st.text_input("What does your app do?", value=default_theme, placeholder="e.g. Track and pay credit card bills for rewards")
 competitors = st.text_input("Any competitor apps? (comma separated)", placeholder="e.g. Cred, OneCard")
 include_hindi = st.checkbox("Include Hindi keywords")
 
